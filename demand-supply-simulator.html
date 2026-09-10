@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demand & Supply Economics Simulator</title>
+<style>
+  :root{
+    --bg-1:#0f172a;
+    --bg-2:#1e293b;
+    --panel:#ffffff;
+    --panel-soft:#f8fafc;
+    --border:#e2e8f0;
+    --text-dark:#0f172a;
+    --text-mid:#475569;
+    --text-light:#94a3b8;
+    --demand:#2563eb;
+    --demand-base:#93c5fd;
+    --supply:#dc2626;
+    --supply-base:#fca5a5;
+    --equil:#059669;
+    --accent:#7c3aed;
+    --radius:16px;
+    --shadow: 0 10px 30px -12px rgba(15,23,42,0.25);
+  }
+
+  *{ box-sizing:border-box; }
+
+  body{
+    margin:0;
+    font-family:'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 10% -10%, #1e3a8a22, transparent),
+                radial-gradient(1200px 600px at 100% 0%, #7c3aed22, transparent),
+                linear-gradient(180deg, #f1f5f9, #e2e8f0);
+    color: var(--text-dark);
+    min-height:100vh;
+    padding: 28px 18px 48px;
+  }
+
+  .app{
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  header{
+    text-align:center;
+    margin-bottom: 26px;
+  }
+
+  header .badge{
+    display:inline-block;
+    background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    color:#e2e8f0;
+    font-size:12px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    padding:6px 14px;
+    border-radius:999px;
+    margin-bottom:12px;
+    font-weight:600;
+  }
+
+  header h1{
+    margin:0 0 6px;
+    font-size: clamp(24px, 4vw, 34px);
+    font-weight:800;
+    letter-spacing:-0.5px;
+  }
+
+  header p{
+    margin:0;
+    color: var(--text-mid);
+    font-size:15px;
+  }
+
+  .layout{
+    display:grid;
+    grid-template-columns: 340px 1fr;
+    gap: 22px;
+    align-items:start;
+  }
+
+  @media (max-width: 900px){
+    .layout{ grid-template-columns: 1fr; }
+  }
+
+  .card{
+    background: var(--panel);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    padding: 22px;
+  }
+
+  .card h2{
+    margin:0 0 4px;
+    font-size:16px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+
+  .card h2 .dot{
+    width:10px; height:10px; border-radius:50%;
+  }
+
+  .card .sub{
+    font-size:12.5px;
+    color:var(--text-light);
+    margin-bottom:16px;
+  }
+
+  .control-block{
+    margin-bottom: 22px;
+  }
+
+  .control-block:last-of-type{ margin-bottom: 4px; }
+
+  .control-label{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:8px;
+  }
+
+  .control-label span.name{
+    font-weight:700;
+    font-size:14px;
+  }
+
+  .control-label span.val{
+    font-weight:800;
+    font-size:14px;
+    padding:2px 10px;
+    border-radius:8px;
+    background: var(--panel-soft);
+    border:1px solid var(--border);
+    min-width:52px;
+    text-align:center;
+  }
+
+  input[type="range"]{
+    -webkit-appearance:none;
+    appearance:none;
+    width:100%;
+    height:8px;
+    border-radius:999px;
+    background: linear-gradient(90deg, #e2e8f0, #e2e8f0);
+    outline:none;
+    margin: 6px 0 2px;
+  }
+
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    appearance:none;
+    width:22px; height:22px;
+    border-radius:50%;
+    background: var(--panel);
+    border:4px solid var(--demand-slider, var(--demand));
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    cursor:pointer;
+    margin-top:-1px;
+  }
+
+  input[type="range"]::-moz-range-thumb{
+    width:22px; height:22px;
+    border-radius:50%;
+    background: var(--panel);
+    border:4px solid var(--demand-slider, var(--demand));
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    cursor:pointer;
+  }
+
+  #supplySlider::-webkit-slider-thumb{ border-color: var(--supply); }
+  #supplySlider::-moz-range-thumb{ border-color: var(--supply); }
+  #demandSlider::-webkit-slider-thumb{ border-color: var(--demand); }
+  #demandSlider::-moz-range-thumb{ border-color: var(--demand); }
+
+  .scale-labels{
+    display:flex;
+    justify-content:space-between;
+    font-size:11px;
+    color: var(--text-light);
+    margin-top:2px;
+  }
+
+  .btn{
+    width:100%;
+    border:none;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+    transition: transform .08s ease, box-shadow .2s ease, opacity .2s ease;
+  }
+  .btn:active{ transform: scale(0.98); }
+
+  .btn-reset{
+    background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    color:#f8fafc;
+    box-shadow: 0 8px 18px -8px rgba(15,23,42,0.5);
+  }
+  .btn-reset:hover{ opacity:0.92; }
+
+  .legend{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top:18px;
+    padding-top:16px;
+    border-top:1px dashed var(--border);
+  }
+  .legend-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:13px;
+    color: var(--text-mid);
+  }
+  .legend-item .swatch{
+    width:26px; height:4px; border-radius:4px; flex:none;
+  }
+  .legend-item .swatch.dashed{
+    background: repeating-linear-gradient(90deg, currentColor 0 6px, transparent 6px 10px);
+    height:3px;
+  }
+
+  .graph-wrap{
+    display:flex;
+    flex-direction:column;
+    gap: 18px;
+  }
+
+  .stats-row{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  @media (max-width: 640px){
+    .stats-row{ grid-template-columns: 1fr; }
+  }
+
+  .stat{
+    background: var(--panel);
+    border:1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+  .stat .label{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.6px;
+    color: var(--text-light);
+    font-weight:700;
+    margin-bottom:6px;
+  }
+  .stat .value{
+    font-size:26px;
+    font-weight:800;
+    color: var(--text-dark);
+  }
+  .stat.eq .value{ color: var(--equil); }
+  .stat .delta{
+    margin-top:4px;
+    font-size:12.5px;
+    font-weight:700;
+  }
+  .delta.up{ color:#059669; }
+  .delta.down{ color:#dc2626; }
+  .delta.flat{ color:var(--text-light); }
+
+  .graph-card{
+    padding: 18px 18px 8px;
+  }
+
+  .graph-card h2{ margin-bottom: 2px; }
+
+  svg{
+    width:100%;
+    height:auto;
+    display:block;
+  }
+
+  .axis-line{ stroke:#334155; stroke-width:2; }
+  .grid-line{ stroke:#e2e8f0; stroke-width:1; }
+  .tick-label{ font-size:11px; fill:#64748b; font-family: inherit; }
+  .axis-title{ font-size:13px; fill:#334155; font-weight:700; font-family: inherit; }
+
+  .curve-base{ fill:none; stroke-width:2; stroke-dasharray:6 6; opacity:0.55; }
+  .curve-main{ fill:none; stroke-width:3.5; stroke-linecap:round; }
+
+  .eq-guide{ stroke:#059669; stroke-width:1.5; stroke-dasharray:4 4; }
+  .eq-point{ fill:#059669; stroke:#fff; stroke-width:2.5; }
+
+  .curve-tag{ font-size:13px; font-weight:800; font-family:inherit; }
+
+  .analysis{
+    background: var(--panel-soft);
+    border:1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 13.5px;
+    color: var(--text-mid);
+    line-height:1.55;
+  }
+  .analysis b{ color: var(--text-dark); }
+
+  footer{
+    text-align:center;
+    color: var(--text-light);
+    font-size:12px;
+    margin-top: 26px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header>
+    <div class="badge">Economics Lab</div>
+    <h1>Demand &amp; Supply Simulator</h1>
+    <p>Interactive market equilibrium model — shift the curves and observe price &amp; quantity adjust in real time.</p>
+  </header>
+
+  <div class="layout">
+
+    <!-- CONTROL PANEL -->
+    <div class="card">
+      <h2><span class="dot" style="background:var(--demand)"></span>Market Controls</h2>
+      <div class="sub">Adjust shifters to simulate real-world market shocks</div>
+
+      <div class="control-block">
+        <div class="control-label">
+          <span class="name" style="color:var(--demand)">Demand Shift</span>
+          <span class="val" id="demandVal">0</span>
+        </div>
+        <input type="range" id="demandSlider" min="-40" max="40" value="0" step="1">
+        <div class="scale-labels"><span>-40 (Decrease)</span><span>+40 (Increase)</span></div>
+      </div>
+
+      <div class="control-block">
+        <div class="control-label">
+          <span class="name" style="color:var(--supply)">Supply Shift</span>
+          <span class="val" id="supplyVal">0</span>
+        </div>
+        <input type="range" id="supplySlider" min="-40" max="40" value="0" step="1">
+        <div class="scale-labels"><span>-40 (Decrease)</span><span>+40 (Increase)</span></div>
+      </div>
+
+      <button class="btn btn-reset" id="resetBtn">↺ Reset to Initial Equilibrium</button>
+
+      <div class="legend">
+        <div class="legend-item"><span class="swatch" style="background:var(--demand)"></span> Current Demand Curve (D)</div>
+        <div class="legend-item"><span class="swatch" style="background:var(--supply)"></span> Current Supply Curve (S)</div>
+        <div class="legend-item" style="color:var(--demand-base)"><span class="swatch dashed"></span> Original Demand (D₀)</div>
+        <div class="legend-item" style="color:var(--supply-base)"><span class="swatch dashed"></span> Original Supply (S₀)</div>
+        <div class="legend-item"><span class="swatch" style="background:var(--equil)"></span> Equilibrium Point (E)</div>
+      </div>
+    </div>
+
+    <!-- GRAPH + STATS -->
+    <div class="graph-wrap">
+
+      <div class="stats-row">
+        <div class="stat eq">
+          <div class="label">Equilibrium Price</div>
+          <div class="value" id="eqPrice">$55.00</div>
+          <div class="delta flat" id="priceDelta">No change</div>
+        </div>
+        <div class="stat eq">
+          <div class="label">Equilibrium Quantity</div>
+          <div class="value" id="eqQty">45.0</div>
+          <div class="delta flat" id="qtyDelta">No change</div>
+        </div>
+        <div class="stat">
+          <div class="label">Market Status</div>
+          <div class="value" id="marketStatus" style="font-size:19px;">Balanced</div>
+          <div class="delta flat">Qd = Qs at equilibrium</div>
+        </div>
+      </div>
+
+      <div class="card graph-card">
+        <h2><span class="dot" style="background:var(--equil)"></span>Market Equilibrium Graph</h2>
+        <div class="sub">Price (Y-axis) vs. Quantity (X-axis)</div>
+        <svg id="chart" viewBox="0 0 620 480" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+
+      <div class="analysis" id="analysisText">
+        Move a slider to simulate a demand or supply shock and see the economic explanation here.
+      </div>
+    </div>
+
+  </div>
+
+  <footer>Built with pure HTML, CSS &amp; JavaScript — no external libraries or APIs required.</footer>
+</div>
+
+<script>
+(function(){
+  // ---------- Model ----------
+  // Base Demand: P = A0 - Q      (A0 = 100)
+  // Base Supply: P = C0 + Q      (C0 = 10)
+  // Demand shift slider (d) moves intercept A = A0 + d
+  // Supply shift slider (s) moves intercept C = C0 - s  (positive s = supply increase)
+  const A0 = 100, C0 = 10;
+  const BOX_MIN = 0, BOX_MAX = 100; // data-space bounds for plotting
+
+  const demandSlider = document.getElementById('demandSlider');
+  const supplySlider = document.getElementById('supplySlider');
+  const demandVal = document.getElementById('demandVal');
+  const supplyVal = document.getElementById('supplyVal');
+  const eqPriceEl = document.getElementById('eqPrice');
+  const eqQtyEl = document.getElementById('eqQty');
+  const priceDeltaEl = document.getElementById('priceDelta');
+  const qtyDeltaEl = document.getElementById('qtyDelta');
+  const marketStatusEl = document.getElementById('marketStatus');
+  const analysisEl = document.getElementById('analysisText');
+  const svg = document.getElementById('chart');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const baseEq = computeEquilibrium(A0, C0);
+
+  // ---------- SVG plot geometry ----------
+  const PAD = { left: 64, right: 30, top: 24, bottom: 56 };
+  const VB_W = 620, VB_H = 480;
+  const plotW = VB_W - PAD.left - PAD.right;
+  const plotH = VB_H - PAD.top - PAD.bottom;
+
+  function xToPx(q){ return PAD.left + (q / 100) * plotW; }
+  function yToPx(p){ return PAD.top + plotH - (p / 100) * plotH; }
+
+  // Liang-Barsky line clipping against [0,100]x[0,100] box
+  function clipLine(x0,y0,x1,y1){
+    let t0 = 0, t1 = 1;
+    const dx = x1 - x0, dy = y1 - y0;
+    const checks = [
+      [-dx, x0 - BOX_MIN],
+      [ dx, BOX_MAX - x0],
+      [-dy, y0 - BOX_MIN],
+      [ dy, BOX_MAX - y0]
+    ];
+    for (const [p, q] of checks){
+      if (p === 0){
+        if (q < 0) return null;
+      } else {
+        const r = q / p;
+        if (p < 0){
+          if (r > t1) return null;
+          if (r > t0) t0 = r;
+        } else {
+          if (r < t0) return null;
+          if (r < t1) t1 = r;
+        }
+      }
+    }
+    return {
+      x0: x0 + t0*dx, y0: y0 + t0*dy,
+      x1: x0 + t1*dx, y1: y0 + t1*dy
+    };
+  }
+
+  // Demand line: P = A - Q  -> points far apart: (Q=-1000, P=A+1000) to (Q=1000, P=A-1000)
+  function demandLinePoints(A){
+    return clipLine(-1000, A + 1000, 1000, A - 1000);
+  }
+  // Supply line: P = C + Q -> (Q=-1000, P=C-1000) to (Q=1000, P=C+1000)
+  function supplyLinePoints(C){
+    return clipLine(-1000, C - 1000, 1000, C + 1000);
+  }
+
+  function computeEquilibrium(A, C){
+    const Q = (A - C) / 2;
+    const P = A - Q;
+    return { Q, P };
+  }
+
+  function svgEl(tag, attrs){
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+
+  function drawStaticAxes(){
+    const g = svgEl('g', {});
+
+    // Gridlines every 10 units
+    for (let i = 0; i <= 100; i += 10){
+      const x = xToPx(i);
+      const y = yToPx(i);
+      g.appendChild(svgEl('line', { x1:x, y1:PAD.top, x2:x, y2:PAD.top+plotH, class:'grid-line' }));
+      g.appendChild(svgEl('line', { x1:PAD.left, y1:y, x2:PAD.left+plotW, y2:y, class:'grid-line' }));
+
+      if (i % 20 === 0){
+        const tx = svgEl('text', { x:x, y:PAD.top+plotH+18, class:'tick-label', 'text-anchor':'middle' });
+        tx.textContent = i;
+        g.appendChild(tx);
+        const ty = svgEl('text', { x:PAD.left-10, y:y+4, class:'tick-label', 'text-anchor':'end' });
+        ty.textContent = i;
+        g.appendChild(ty);
+      }
+    }
+
+    // Axes
+    g.appendChild(svgEl('line', { x1:PAD.left, y1:PAD.top, x2:PAD.left, y2:PAD.top+plotH, class:'axis-line' }));
+    g.appendChild(svgEl('line', { x1:PAD.left, y1:PAD.top+plotH, x2:PAD.left+plotW, y2:PAD.top+plotH, class:'axis-line' }));
+
+    // Axis titles
+    const xt = svgEl('text', { x: PAD.left + plotW/2, y: VB_H - 12, class:'axis-title', 'text-anchor':'middle' });
+    xt.textContent = 'Quantity (units)';
+    g.appendChild(xt);
+
+    const yt = svgEl('text', { x: 18, y: PAD.top + plotH/2, class:'axis-title', 'text-anchor':'middle',
+                                transform:`rotate(-90 18 ${PAD.top + plotH/2})` });
+    yt.textContent = 'Price ($)';
+    g.appendChild(yt);
+
+    return g;
+  }
+
+  const staticLayer = drawStaticAxes();
+  svg.appendChild(staticLayer);
+
+  const dynamicLayer = svgEl('g', { id:'dynamic' });
+  svg.appendChild(dynamicLayer);
+
+  function pathFromClip(clip){
+    if (!clip) return null;
+    return `M ${xToPx(clip.x0)} ${yToPx(clip.y0)} L ${xToPx(clip.x1)} ${yToPx(clip.y1)}`;
+  }
+
+  function render(){
+    const d = parseInt(demandSlider.value, 10);
+    const s = parseInt(supplySlider.value, 10);
+    demandVal.textContent = (d > 0 ? '+' : '') + d;
+    supplyVal.textContent = (s > 0 ? '+' : '') + s;
+
+    const A = A0 + d;
+    const C = C0 - s;
+    const eq = computeEquilibrium(A, C);
+
+    // Clear dynamic layer
+    while (dynamicLayer.firstChild) dynamicLayer.removeChild(dynamicLayer.firstChild);
+
+    // Base curves (dashed, only if shift != 0)
+    if (d !== 0){
+      const baseClip = demandLinePoints(A0);
+      const p = pathFromClip(baseClip);
+      if (p) dynamicLayer.appendChild(svgEl('path', { d:p, class:'curve-base', stroke:'var(--demand-base)' }));
+    }
+    if (s !== 0){
+      const baseClip = supplyLinePoints(C0);
+      const p = pathFromClip(baseClip);
+      if (p) dynamicLayer.appendChild(svgEl('path', { d:p, class:'curve-base', stroke:'var(--supply-base)' }));
+    }
+
+    // Current curves
+    const dClip = demandLinePoints(A);
+    const sClip = supplyLinePoints(C);
+    const dPath = pathFromClip(dClip);
+    const sPath = pathFromClip(sClip);
+    if (dPath) dynamicLayer.appendChild(svgEl('path', { d:dPath, class:'curve-main', stroke:'var(--demand)' }));
+    if (sPath) dynamicLayer.appendChild(svgEl('path', { d:sPath, class:'curve-main', stroke:'var(--supply)' }));
+
+    // Curve end labels
+    if (dClip){
+      const useStart = dClip.y0 < dClip.y1; // pick the higher point (lower price value... actually pick left-top)
+      const lx = xToPx(Math.min(dClip.x0, dClip.x1));
+      const ly = yToPx(dClip.x0 < dClip.x1 ? dClip.y0 : dClip.y1);
+      const t = svgEl('text', { x:lx+6, y:ly-6, class:'curve-tag', fill:'var(--demand)' });
+      t.textContent = 'D';
+      dynamicLayer.appendChild(t);
+    }
+    if (sClip){
+      const lx = xToPx(Math.max(sClip.x0, sClip.x1));
+      const ly = yToPx(sClip.x0 > sClip.x1 ? sClip.y0 : sClip.y1);
+      const t = svgEl('text', { x:lx-14, y:ly-8, class:'curve-tag', fill:'var(--supply)' });
+      t.textContent = 'S';
+      dynamicLayer.appendChild(t);
+    }
+
+    // Equilibrium point + guides
+    const eqInBox = eq.Q >= 0 && eq.Q <= 100 && eq.P >= 0 && eq.P <= 100;
+    if (eqInBox){
+      const ex = xToPx(eq.Q), ey = yToPx(eq.P);
+      dynamicLayer.appendChild(svgEl('line', { x1:ex, y1:ey, x2:ex, y2:PAD.top+plotH, class:'eq-guide' }));
+      dynamicLayer.appendChild(svgEl('line', { x1:PAD.left, y1:ey, x2:ex, y2:ey, class:'eq-guide' }));
+      dynamicLayer.appendChild(svgEl('circle', { cx:ex, cy:ey, r:7, class:'eq-point' }));
+
+      const label = svgEl('text', { x:ex+12, y:ey-12, class:'curve-tag', fill:'var(--equil)' });
+      label.textContent = `E (${eq.Q.toFixed(1)}, $${eq.P.toFixed(2)})`;
+      dynamicLayer.appendChild(label);
+    }
+
+    // Stats
+    eqPriceEl.textContent = '$' + eq.P.toFixed(2);
+    eqQtyEl.textContent = eq.Q.toFixed(1);
+
+    setDelta(priceDeltaEl, eq.P, baseEq.P, '$');
+    setDelta(qtyDeltaEl, eq.Q, baseEq.Q, '');
+
+    marketStatusEl.textContent = eqInBox ? 'Balanced' : 'Out of range';
+
+    // Analysis text
+    analysisEl.innerHTML = buildAnalysis(d, s, eq);
+  }
+
+  function setDelta(el, current, base, prefix){
+    const diff = current - base;
+    if (Math.abs(diff) < 0.05){
+      el.textContent = 'No change';
+      el.className = 'delta flat';
+      return;
+    }
+    const pct = (diff / base) * 100;
+    const sign = diff > 0 ? '▲' : '▼';
+    el.textContent = `${sign} ${prefix}${Math.abs(diff).toFixed(2)} (${pct > 0 ? '+' : ''}${pct.toFixed(1)}%)`;
+    el.className = 'delta ' + (diff > 0 ? 'up' : 'down');
+  }
+
+  function buildAnalysis(d, s, eq){
+    if (d === 0 && s === 0){
+      return `The market is at its <b>original equilibrium</b>: Price = $${baseEq.P.toFixed(2)}, Quantity = ${baseEq.Q.toFixed(1)} units. Move either slider to simulate a demand or supply shock.`;
+    }
+    let parts = [];
+    if (d !== 0){
+      const dir = d > 0 ? 'increased (shifted right)' : 'decreased (shifted left)';
+      parts.push(`Demand has <b>${dir}</b> by ${Math.abs(d)} units`);
+    }
+    if (s !== 0){
+      const dir = s > 0 ? 'increased (shifted right)' : 'decreased (shifted left)';
+      parts.push(`Supply has <b>${dir}</b> by ${Math.abs(s)} units`);
+    }
+    const priceMove = eq.P > baseEq.P ? 'risen' : (eq.P < baseEq.P ? 'fallen' : 'stayed the same');
+    const qtyMove = eq.Q > baseEq.Q ? 'risen' : (eq.Q < baseEq.Q ? 'fallen' : 'stayed the same');
+    return `${parts.join(' and ')}. As a result, the equilibrium price has <b>${priceMove}</b> to $${eq.P.toFixed(2)}, and the equilibrium quantity has <b>${qtyMove}</b> to ${eq.Q.toFixed(1)} units.`;
+  }
+
+  demandSlider.addEventListener('input', render);
+  supplySlider.addEventListener('input', render);
+  resetBtn.addEventListener('click', () => {
+    demandSlider.value = 0;
+    supplySlider.value = 0;
+    render();
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
