@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive PPC Simulator</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f7f5;margin:0;padding:30px}
+.container{max-width:900px;margin:auto;background:white;padding:30px;border-radius:15px;box-shadow:0 4px 15px rgba(0,0,0,.1)}
+h1{text-align:center;color:#145a32}
+.subtitle{text-align:center;color:#555}
+.controls{margin:25px 0;padding:20px;background:#eef5f0;border-radius:10px}
+label{font-weight:bold}
+input{width:100%;margin:10px 0 20px}
+.info{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:20px}
+.card{padding:15px;border-radius:10px;background:#f1f1f1;text-align:center}
+.card h3{margin:5px}
+#status{font-weight:bold;color:#145a32}
+canvas{margin-top:20px}
+@media(max-width:600px){.info{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Production Possibility Curve Simulator</h1>
+<p class="subtitle">Explore scarcity, efficiency, opportunity cost and production choices.</p>
+
+<div class="controls">
+<label>Production of Good X: <span id="xValue">5.0</span></label>
+<input type="range" id="xSlider" min="0" max="10" step="0.1" value="5">
+</div>
+
+<canvas id="ppcChart"></canvas>
+
+<div class="info">
+<div class="card"><h3>Good X</h3><p id="xOutput">5.0</p></div>
+<div class="card"><h3>Good Y</h3><p id="yOutput">8.66</p></div>
+<div class="card"><h3>Status</h3><p id="status">Efficient</p></div>
+</div>
+</div>
+
+<script>
+const ctx=document.getElementById('ppcChart');
+const ppcData=[];
+for(let x=0;x<=10;x+=0.1){
+  let y=Math.sqrt(100-x*x);
+  ppcData.push({x:Number(x.toFixed(1)),y:Number(y.toFixed(2))});
+}
+const chart=new Chart(ctx,{
+ type:'scatter',
+ data:{datasets:[
+  {label:'Production Possibility Curve',data:ppcData,showLine:true,fill:false,tension:.2},
+  {label:'Current Production',data:[{x:5,y:Math.sqrt(75)}],pointRadius:8}
+ ]},
+ options:{responsive:true,scales:{
+  x:{title:{display:true,text:'Good X'},min:0,max:10},
+  y:{title:{display:true,text:'Good Y'},min:0,max:10}
+ }}
+});
+const slider=document.getElementById('xSlider');
+slider.addEventListener('input',function(){
+ let x=Number(this.value);
+ let y=Math.sqrt(100-x*x);
+ document.getElementById('xValue').textContent=x.toFixed(1);
+ document.getElementById('xOutput').textContent=x.toFixed(1);
+ document.getElementById('yOutput').textContent=y.toFixed(2);
+ document.getElementById('status').textContent='Efficient';
+ chart.data.datasets[1].data=[{x:x,y:y}];
+ chart.update();
+});
+</script>
+</body>
+</html>
